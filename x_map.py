@@ -183,3 +183,58 @@ def plot(data, min_size_px=512, extend_percentage=10, filename=False,
 
         # Close plot.
         plt.close()
+
+
+
+def plot_map(data, min_size_px=512, extend_percentage=10, **imshow_kwargs):
+    """Plot map for given data.
+
+    Parameters
+    ----------
+    data : array_like
+        The input data.  Columns should be latitude, longitude.
+    min_size_px : int, optional
+        Minimum size of generated plot in pixels.  Defaults to 512.
+    extend_percentage : int, float, optional
+        Determines how much the shown map is extended around the
+        bounding box of the values.  Given in percent of the bounding
+        box extents.  Defaults to 10.
+    **imshow_kwargs : optional
+        All remaining keyword arguments are passed to matplotlib
+        imshow.
+
+    Returns
+    -------
+    smopy_map : Smopy Map
+        The generated smopy map object.
+    ax : AxesImage
+        The matplotlib AxesImage containing the map.
+
+    """
+    # Calculate bounding box and zoom.
+    lat_long_min, lat_long_max = calculate_bounding_coordinates(data, extend_percentage=extend_percentage)
+    zoom = calculate_optimal_zoom(lat_long_min, lat_long_max, min_size_px)
+
+    # Get map data from OpenStreetMaps.
+    dpi = 72
+    smopy_map = smopy.Map((*lat_long_min, *lat_long_max), z=zoom)
+
+    # Calculate resulting figure size.
+    size = smopy_map.to_pil().size
+    print(size)
+    figsize = (10/32 + size[0] / dpi, 10/32 + size[1] / dpi)
+
+    # Convert map to matplotlib.
+    ax = smopy_map.show_mpl(figsize=figsize, dpi=dpi, **imshow_kwargs)
+
+    # Get the extended bounding box in pixels.
+    x_min, y_min = smopy_map.to_pixels(lat_long_max[0], lat_long_min[1])
+    x_max, y_max = smopy_map.to_pixels(lat_long_min[0], lat_long_max[1])
+
+    # Set the axes limits to show only the extended bounding box.
+    #ax.set_xlim(x_min, x_max)
+    #ax.set_ylim(y_max, y_min)
+    print(x_min, x_max)
+    print(y_min, y_max)
+
+    return smopy_map, ax
